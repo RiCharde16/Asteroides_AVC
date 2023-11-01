@@ -1,26 +1,37 @@
 import pygame as pg
-import math
-# import Classe_Player as obj
-from random import *
+import os, sys
+from Utilizaveis import *
 from random import *
 import tkinter as tk
 from sys import exit
 from pygame.locals import *
 
+# O codigo a seguir ira intermediar o direitorio do arquivo que ira gerar o executavel com Pyinstaller
+dirpath = os.getcwd()
+sys.path.append(dirpath)
+
+if getattr(sys,'frozen',False):
+    os.chdir(sys._MEIPASS)
+
 root = tk.Tk()
 pg.init()
 
-largura = 740
-altura = 650
+# largura = 740
+# altura = 650
 largura = root.winfo_screenwidth()
 altura = root.winfo_screenheight()
 
 screen = pg.display.set_mode((largura,altura-50))
 
+musica_background = pg.mixer.music.load('./assets/soundtracks/Used To Say.mp3')
+pg.mixer.music.play(-1)
+
+sound_lazer = pg.mixer.Sound('./assets/soundtracks/Laser Gun Short Silencer 03.mp3')
 
 class Asteroide(pg.sprite.Sprite):
-    def __init__(self,pos,group):
-        super().__init__(group)
+    def __init__(self,pos,group,all_sprites):
+        self._layer = 3
+        super().__init__(all_sprites,group)
         self.sprites_asteroide = []
         valor = randint(0,2)
         self.index = valor
@@ -31,48 +42,52 @@ class Asteroide(pg.sprite.Sprite):
                 # img = pg.transform.scale(img,(64,64))
                 self.sprites_asteroide.append(img)
         self.image = self.sprites_asteroide[self.index]
+        self.rotated_image = self.image
         self.rect = self.image.get_rect(center=pos)
-        self.direction = pg.math.Vector2()
+        self.position = pg.math.Vector2(pos)
+        self.mask = pg.mask.from_surface(self.rotated_image)
         self.speed = 2
         self.angle = 0
     def update(self):
-        # self.direction.x = 1
         self.rotaciona()
-        
-        # self.index += 0.5
-        # if self.index >= 14:
-        #     self.index = 0
-        # self.image = self.sprites_asteroide[int(self.index)]
-        # print(int(self.index))
+        self.movimentacao()
         
     def rotaciona(self):
-        self.angle -= 2
-        rotated_image = pg.transform.rotate(self.image, self.angle)
-        # print(self.angle)
-        # self.image = rotated_image
-        # self.rect.x += self.speed
+        self.angle += 2
+        self.rotated_image = pg.transform.rotate(self.image, self.angle)
         # screen.blit(rotated_image,(self.rect.x - rotated_image.get_width() // 2,self.rect.y - rotated_image.get_height() // 2))
-        self.mask = pg.mask.from_surface(rotated_image)
-        # rotated_image.fill((255,255,0))
-        screen.blit(rotated_image,(self.rect.x - rotated_image.get_width() // 2,self.rect.y - rotated_image.get_height() // 2))
+        
+        screen.blit(self.rotated_image,(self.rect.x - self.rotated_image.get_width() // 2,self.rect.y - self.rotated_image.get_height() // 2))
         # screen.blit(rotated_image,(self.rect))
+    def movimentacao(self):
+        player_pos = pg.math.Vector2(player.rect.center)
+        direction = player_pos - self.rect.center
+        # if dirty = direction.normalize() * self.speed
+        velocity = direction.normalize() * self.speed
+        # print(direction)
+        self.position += velocity 
+        self.rect.center = self.position
 
 class Player(pg.sprite.Sprite):
-    def __init__(self,pos,group):
-        super().__init__(group)
+    def __init__(self,pos,group,all_sprites):
+        self._layer= 2
+        super().__init__(all_sprites,group)
         self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
         self.image = self.spritesheet.subsurface((0,0),(96,96))
+        # group.add(self, layer= self.layer)
+        self.image = pg.transform.scale(self.image,(86,86))
         self.rect = self.image.get_rect(center=pos)
 
         self.angle = 0
         self.rotated = self.image
-        self.speed = 5
-
+        self.mask = pg.mask.from_surface(self.rotated)
+        self.speed = 6
+        
 
     def update(self):
-        self.mask = pg.mask.from_surface(self.image)
         self.movimentacao()
         self.direct = pg.math.Vector2(0,-self.speed).rotate(self.angle)
+        
         screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
         # screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
     
@@ -85,25 +100,23 @@ class Player(pg.sprite.Sprite):
         elif key[K_RIGHT]:
             self.angle = self.angle - self.speed
             self.rotated = pg.transform.rotate(self.image,self.angle)
-        if abs(self.angle) == 360:
-            self.angle = 0
-        if self.angle == -180:
-            self.angle = 180
-        elif self.angle == 180:
-            self.angle = -180
+        # if abs(self.angle) == 360:
+        #     self.angle = 0
+        # if self.angle == -180:
+        #     self.angle = 180
+        # elif self.angle == 180:
+        #     self.angle = -180
+
     def atirando(self,evento):
         # print(self.angle)
         if evento.key == K_SPACE:
-            # print("Apertou Spaço")'
-            # tiro = Lazer((self.rect.x-20,self.rect.y-20),self.angle,group_camera)
-            blaster = Lazer((self.rect.x+32,self.rect.y+32),self.angle,group_camera)
-            # blaster = Lazer((self.rect.center),self.angle,group_camera)
-            # print(self.angle)
-            # print(blaster.direct)
+            blaster = Lazer((self.rect.x+32,self.rect.y+32),self.angle,grupo_lazer,all_sprites)
+            sound_lazer.play()
 
 class Lazer(pg.sprite.Sprite):
-    def __init__(self,pos,angle,group):
-        super().__init__(group)
+    def __init__(self,pos,angle,group,all_sprites):
+        self._layer = 1
+        super().__init__(all_sprites,group)
         self.angle =angle
         self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
         self.image = self.spritesheet.subsurface((96,0),(96,96))
@@ -111,51 +124,102 @@ class Lazer(pg.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
         self.speed = 10
         self.copy = self.image
+        self.mask = pg.mask.from_surface(self.copy)
 
         # Ira criar um Vetor2(x,y) e ira girar o Lazer conforme a rotação do personagem
         # Assim ira ir girando o proprio sprite do lazer e ira em direção conforme o angulo que foi rotacionado 
         self.direct = pg.math.Vector2(0,-self.speed).rotate(-self.angle) 
 
     def update(self):
-        self.copy = pg.transform.rotate(self.image,self.angle)  
-
+        self.copy = pg.transform.rotate(self.image,self.angle) 
         self.rect.center += self.direct
+        
         screen.blit(self.copy,(self.rect.x - self.copy.get_width() // 2, self.rect.y - self.copy.get_height() // 2 ))
-         
-class CameraGroup(pg.sprite.Group):
-    def __init__(self):
-        super().__init__()
+    
+    def outScreen(self,sprite):
+        if self.rect.x < 0 or self.rect.x > largura or self.rect.y < 0 or self.rect.y > altura:
+            all_sprites.remove(sprite)
+            grupo_lazer.remove(sprite)
+            # print(all_sprites)
+
+def verificarJanelaMinimizada(event):
+    if event.type == ACTIVEEVENT:
+        # print(event.__dict__)
+        if event.gain == 0 and  event.state == 2:
+            # print("janela Fechou")
+            pg.mixer.music.pause()
+            # pygame.display.
+        elif event.gain == 1 and event.state == 2:
+            pg.mixer.music.unpause()
+
+def verificarColisao(obj1,group):
+    colidiu = pg.sprite.spritecollide(obj1,group,False, pg.sprite.collide_mask)
+    return colidiu
 
 grupo_asteroide = pg.sprite.Group()
-# grupo_nave = pg.sprite.Group()
-group_camera = CameraGroup()
+grupo_lazer = pg.sprite.Group()
+all_sprites = pg.sprite.LayeredUpdates()
 
-def verificarColisao(obj1,obj2):
-    colidiu = pg.sprite.spritecollide(obj1,obj2,False, pg.sprite.collide_mask)
-    # if colidiu:
-        # print("Colidiu")
-player = Player((largura//2,altura//2),group_camera)
-asteroides = []
-for x in range(15):
-    asteroide = Asteroide((randint(30,largura-50),randint(20,altura-50)),group_camera)
-    grupo_asteroide.add(asteroide)
 
+sprites = pg.sprite.LayeredUpdates()
+player = Player((largura//2,altura//2),all_sprites,all_sprites)
+
+def gerarAsteroides():
+    for x in range(20): 
+        pos_x = randint(-1200,largura+1000)
+        pos_y = randint(-1200,altura+1000)
+        if pos_x < 0 or pos_x > largura and pos_y < 0 or pos_y > altura: 
+            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites)
+
+asteroide = Asteroide((10,100),grupo_asteroide,all_sprites)
 clock = pg.time.Clock()
+
+pontos = 0
+evento_tempo = pg.USEREVENT + 1
+pg.time.set_timer(evento_tempo, 12000)
+gerarAsteroides()
 while True:
     screen.fill((0,0,0))
     clock.tick(30)
-    group_camera.update()
-    verificarColisao(player,grupo_asteroide)
-
+    txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True)
+    # txt_rect = txt_pontos.get_rect(center=(largura-10,10))
+    screen.blit(txt_pontos,(largura-200,0))
     for event in pg.event.get():
         if event.type == QUIT:
             pg.quit()
             exit()
         if event.type == KEYDOWN:
-            player.atirando(event)
-            # pass
+            player.atirando(event)   
+        if event.type == evento_tempo:
+            # print("Passou 11 segundos")    
+            gerarAsteroides()
 
+        verificarJanelaMinimizada(event)
+
+    # Verifica cada sprite no grupo asteroide e depois faz o mesmo no lazer para remover as sprites que colidiram
+    for sprite in grupo_asteroide:
+        colisao_tiro = verificarColisao(sprite,grupo_lazer) 
+        for lazer in grupo_lazer:
+            colisao_meteoro = verificarColisao(lazer,grupo_asteroide)
+            if colisao_meteoro and colisao_tiro:
+                pontos += 1
+                all_sprites.remove(sprite)
+                grupo_asteroide.remove(sprite)
+
+                all_sprites.remove(lazer)
+                grupo_lazer.remove(lazer)
     
+    # Ira verificar se algum sprite do laser saiu da tela e ira exclui-lo do Grupo das sprites principal
+    for lazer in grupo_lazer:
+        lazer.outScreen(lazer)
+
+    death = verificarColisao(player,grupo_asteroide)
+
+    if death:
+        all_sprites.remove(all_sprites)
+        Tela.GameOver(death,screen)
+
+    all_sprites.update()
     
     # group_camera.custom_draw()
 
