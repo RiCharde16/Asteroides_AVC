@@ -22,9 +22,14 @@ largura = root.winfo_screenwidth()
 altura = root.winfo_screenheight()
 
 screen = pg.display.set_mode((largura,altura-50))
+sprite_sheet = pg.image.load('./assets/sprites/Sprites_Personagem.png').convert_alpha()
+img = sprite_sheet.subsurface((0,0),(96,96))
+# pg.display.set_icon(img)
+pg.display.set_caption("Asteroide")
+pg.display.set_icon(pg.transform.scale(img,(32,32)))
 
-musica_background = pg.mixer.music.load('./assets/soundtracks/Used To Say.mp3')
-pg.mixer.music.play(-1)
+# musica_background = pg.mixer.music.load('./assets/soundtracks/Used To Say.mp3')
+# pg.mixer.music.play(-1)
 
 sound_lazer = pg.mixer.Sound('./assets/soundtracks/Laser Gun Short Silencer 03.mp3')
 
@@ -45,9 +50,9 @@ class Asteroide(pg.sprite.Sprite):
         self.rotated_image = self.image
         self.rect = self.image.get_rect(center=pos)
         self.position = pg.math.Vector2(pos)
-        self.mask = pg.mask.from_surface(self.rotated_image)
         self.speed = 2
         self.angle = 0
+        self.mask = pg.mask.from_surface(self.rotated_image)
     def update(self):
         self.rotaciona()
         self.movimentacao()
@@ -56,7 +61,6 @@ class Asteroide(pg.sprite.Sprite):
         self.angle += 2
         self.rotated_image = pg.transform.rotate(self.image, self.angle)
         # screen.blit(rotated_image,(self.rect.x - rotated_image.get_width() // 2,self.rect.y - rotated_image.get_height() // 2))
-        
         screen.blit(self.rotated_image,(self.rect.x - self.rotated_image.get_width() // 2,self.rect.y - self.rotated_image.get_height() // 2))
         # screen.blit(rotated_image,(self.rect))
     def movimentacao(self):
@@ -161,7 +165,6 @@ grupo_lazer = pg.sprite.Group()
 all_sprites = pg.sprite.LayeredUpdates()
 
 
-sprites = pg.sprite.LayeredUpdates()
 player = Player((largura//2,altura//2),all_sprites,all_sprites)
 
 def gerarAsteroides():
@@ -171,19 +174,37 @@ def gerarAsteroides():
         if pos_x < 0 or pos_x > largura and pos_y < 0 or pos_y > altura: 
             asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites)
 
+def reiniciarJogo(goMenu=False):
+    # pg.mixer.music.play(-1)
+    global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu
+    menu = goMenu
+    grupo_lazer.empty()
+    grupo_asteroide.empty()
+    pontos = 0
+    death = False
+    player = Player((largura//2,altura//2),all_sprites,all_sprites)
+    gerarAsteroides()
+
 asteroide = Asteroide((10,100),grupo_asteroide,all_sprites)
 clock = pg.time.Clock()
 
 pontos = 0
 evento_tempo = pg.USEREVENT + 1
+menu = True
+Tela.centerX = screen.get_width()/2
+Tela.centerY = screen.get_height()/2
+
 pg.time.set_timer(evento_tempo, 12000)
+font_pontos = Texto.novaFonte(Tela.dir_font,32) 
+
 gerarAsteroides()
 while True:
-    screen.fill((0,0,0))
     clock.tick(30)
-    txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True)
-    # txt_rect = txt_pontos.get_rect(center=(largura-10,10))
-    screen.blit(txt_pontos,(largura-200,0))
+    menu = Tela.Menu(menu,screen)
+    screen.fill((0,0,0))
+    txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True,newFont=font_pontos)
+    txt_rect = txt_pontos.get_rect(center=(largura-120,40))
+    
     for event in pg.event.get():
         if event.type == QUIT:
             pg.quit()
@@ -217,10 +238,15 @@ while True:
 
     if death:
         all_sprites.remove(all_sprites)
-        Tela.GameOver(death,screen)
+        death = Tela.GameOver(death,screen,pontos)
+        if death[0] == False and death[1] == False:
+            reiniciarJogo()
+        else:
+            reiniciarJogo(death[1])
+    
 
     all_sprites.update()
-    
+    screen.blit(txt_pontos,txt_rect)
     # group_camera.custom_draw()
 
     pg.display.flip()
