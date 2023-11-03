@@ -16,10 +16,10 @@ if getattr(sys,'frozen',False):
 root = tk.Tk()
 pg.init()
 
-# largura = 740
-# altura = 650
-largura = root.winfo_screenwidth()
-altura = root.winfo_screenheight()
+largura = 740
+altura = 650
+# largura = root.winfo_screenwidth()
+# altura = root.winfo_screenheight()
 
 screen = pg.display.set_mode((largura,altura-50))
 sprite_sheet = pg.image.load('./assets/sprites/Sprites_Personagem.png').convert_alpha()
@@ -177,6 +177,7 @@ def gerarAsteroides():
 def reiniciarJogo(goMenu=False):
     # pg.mixer.music.play(-1)
     global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu
+    
     menu = goMenu
     grupo_lazer.empty()
     grupo_asteroide.empty()
@@ -195,14 +196,22 @@ Tela.centerX = screen.get_width()/2
 Tela.centerY = screen.get_height()/2
 
 pg.time.set_timer(evento_tempo, 12000)
-font_pontos = Texto.novaFonte(Tela.dir_font,32) 
+
+font1 = Texto.novaFonte(Tela.dir_font,32) 
+# font_nome = Texto.novaFonte(Tela.dir_font,32)
 
 gerarAsteroides()
+# menu = Tela.Menu(menu,screenn)
 while True:
     clock.tick(30)
     menu = Tela.Menu(menu,screen)
+
+    # print(Tela.nome_jogador)
     screen.fill((0,0,0))
-    txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True,newFont=font_pontos)
+    name = Texto.DrawTexto(Tela.nome_jogador,(255,255,255),newFont=font1)
+    name_rect = name.get_rect(topleft=(10,20))
+
+    txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True,newFont=font1)
     txt_rect = txt_pontos.get_rect(center=(largura-120,40))
     
     for event in pg.event.get():
@@ -247,6 +256,7 @@ while True:
 
     all_sprites.update()
     screen.blit(txt_pontos,txt_rect)
+    screen.blit(name,name_rect)
     # group_camera.custom_draw()
 
     pg.display.flip()
