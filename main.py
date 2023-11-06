@@ -16,25 +16,28 @@ if getattr(sys,'frozen',False):
 root = tk.Tk()
 pg.init()
 
-largura = 740
-altura = 650
-# largura = root.winfo_screenwidth()
-# altura = root.winfo_screenheight()
+# largura = 740
+# altura = 650
+largura = root.winfo_screenwidth()
+altura = root.winfo_screenheight()
 
 screen = pg.display.set_mode((largura,altura-50))
-sprite_sheet = pg.image.load('./assets/sprites/Sprites_Personagem.png').convert_alpha()
+sprite_sheet = pg.image.load('./Assets/sprites/Sprites_Personagem.png').convert_alpha()
 img = sprite_sheet.subsurface((0,0),(96,96))
 # pg.display.set_icon(img)
 pg.display.set_caption("Asteroide")
 pg.display.set_icon(pg.transform.scale(img,(32,32)))
 
-# musica_background = pg.mixer.music.load('./assets/soundtracks/Used To Say.mp3')
+# musica_background = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
 # pg.mixer.music.play(-1)
+musica_background = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
+pg.mixer.music.play(-1)
 
-sound_lazer = pg.mixer.Sound('./assets/soundtracks/Laser Gun Short Silencer 03.mp3')
+sound_lazer = pg.mixer.Sound('./Assets/soundtracks/Laser Gun Short Silencer 03.mp3')
+sound_lazer.set_volume(0.4)
 
 class Asteroide(pg.sprite.Sprite):
-    def __init__(self,pos,group,all_sprites):
+    def __init__(self,pos,group,all_sprites,velocidade=2):
         self._layer = 3
         super().__init__(all_sprites,group)
         self.sprites_asteroide = []
@@ -50,7 +53,7 @@ class Asteroide(pg.sprite.Sprite):
         self.rotated_image = self.image
         self.rect = self.image.get_rect(center=pos)
         self.position = pg.math.Vector2(pos)
-        self.speed = 2
+        self.speed = velocidade
         self.angle = 0
         self.mask = pg.mask.from_surface(self.rotated_image)
     def update(self):
@@ -84,14 +87,13 @@ class Player(pg.sprite.Sprite):
 
         self.angle = 0
         self.rotated = self.image
-        self.mask = pg.mask.from_surface(self.rotated)
         self.speed = 6
         
 
     def update(self):
         self.movimentacao()
         self.direct = pg.math.Vector2(0,-self.speed).rotate(self.angle)
-        
+        self.mask = pg.mask.from_surface(self.rotated)
         screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
         # screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
     
@@ -122,13 +124,13 @@ class Lazer(pg.sprite.Sprite):
         self._layer = 1
         super().__init__(all_sprites,group)
         self.angle =angle
-        self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
+        self.spritesheet = pg.image.load("./Assets/sprites/Sprites_Personagem.png")
         self.image = self.spritesheet.subsurface((96,0),(96,96))
         self.image = pg.transform.scale(self.image,(64,64))
         self.rect = self.image.get_rect(center=pos)
         self.speed = 10
         self.copy = self.image
-        self.mask = pg.mask.from_surface(self.copy)
+        
 
         # Ira criar um Vetor2(x,y) e ira girar o Lazer conforme a rotação do personagem
         # Assim ira ir girando o proprio sprite do lazer e ira em direção conforme o angulo que foi rotacionado 
@@ -136,6 +138,7 @@ class Lazer(pg.sprite.Sprite):
 
     def update(self):
         self.copy = pg.transform.rotate(self.image,self.angle) 
+        self.mask = pg.mask.from_surface(self.copy)
         self.rect.center += self.direct
         
         screen.blit(self.copy,(self.rect.x - self.copy.get_width() // 2, self.rect.y - self.copy.get_height() // 2 ))
@@ -146,15 +149,6 @@ class Lazer(pg.sprite.Sprite):
             grupo_lazer.remove(sprite)
             # print(all_sprites)
 
-def verificarJanelaMinimizada(event):
-    if event.type == ACTIVEEVENT:
-        # print(event.__dict__)
-        if event.gain == 0 and  event.state == 2:
-            # print("janela Fechou")
-            pg.mixer.music.pause()
-            # pygame.display.
-        elif event.gain == 1 and event.state == 2:
-            pg.mixer.music.unpause()
 
 def verificarColisao(obj1,group):
     colidiu = pg.sprite.spritecollide(obj1,group,False, pg.sprite.collide_mask)
@@ -167,17 +161,19 @@ all_sprites = pg.sprite.LayeredUpdates()
 
 player = Player((largura//2,altura//2),all_sprites,all_sprites)
 
-def gerarAsteroides():
+def gerarAsteroides(spped=2):
     for x in range(20): 
         pos_x = randint(-1200,largura+1000)
         pos_y = randint(-1200,altura+1000)
         if pos_x < 0 or pos_x > largura and pos_y < 0 or pos_y > altura: 
-            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites)
+            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites,spped)
 
 def reiniciarJogo(goMenu=False):
     # pg.mixer.music.play(-1)
-    global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu
-    
+    global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu,load
+
+    pg.mixer.music.play(-1)
+    load = Save.lerArquivo()
     menu = goMenu
     grupo_lazer.empty()
     grupo_asteroide.empty()
@@ -200,19 +196,28 @@ pg.time.set_timer(evento_tempo, 12000)
 font1 = Texto.novaFonte(Tela.dir_font,32) 
 # font_nome = Texto.novaFonte(Tela.dir_font,32)
 
-gerarAsteroides()
 # menu = Tela.Menu(menu,screenn)
-while True:
-    clock.tick(30)
-    menu = Tela.Menu(menu,screen)
+load = Save.lerArquivo()
+FPS = 30
+# print(pg.mixer.get_num_channels())
 
+speed_asteroide = 2
+gerarAsteroides(speed_asteroide)
+while True:
+    clock.tick(FPS)
+    menu = Tela.Menu(menu,screen)
+    # pg.mouse.set_visible(menu)
     # print(Tela.nome_jogador)
     screen.fill((0,0,0))
+    # pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
     name = Texto.DrawTexto(Tela.nome_jogador,(255,255,255),newFont=font1)
+
     name_rect = name.get_rect(topleft=(10,20))
 
     txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True,newFont=font1)
     txt_rect = txt_pontos.get_rect(center=(largura-120,40))
+
+    # pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
     
     for event in pg.event.get():
         if event.type == QUIT:
@@ -221,11 +226,16 @@ while True:
         if event.type == KEYDOWN:
             player.atirando(event)   
         if event.type == evento_tempo:
-            # print("Passou 11 segundos")    
-            gerarAsteroides()
-
-        verificarJanelaMinimizada(event)
-
+            # if pontos:
+            if pontos%50 == 0 and pontos != 0 and speed_asteroide <= 10:
+                speed_asteroide += 1
+            gerarAsteroides(speed_asteroide)
+        Tela.verificarJanelaMinimizada(event)
+    # if pontos%100 == 0:
+    # if (pontos%100) == 0 and pontos != 0:
+    #     print("Aumentar velocidade")
+        # print(pontos%100)
+    #     print("Aumentar")
     # Verifica cada sprite no grupo asteroide e depois faz o mesmo no lazer para remover as sprites que colidiram
     for sprite in grupo_asteroide:
         colisao_tiro = verificarColisao(sprite,grupo_lazer) 
@@ -247,7 +257,7 @@ while True:
 
     if death:
         all_sprites.remove(all_sprites)
-        death = Tela.GameOver(death,screen,pontos)
+        death = Tela.GameOver(death,screen,pontos,load)
         if death[0] == False and death[1] == False:
             reiniciarJogo()
         else:
