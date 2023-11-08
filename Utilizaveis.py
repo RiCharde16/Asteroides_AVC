@@ -32,15 +32,18 @@ class Tela:
 
         # nome = Texto.DrawTexto()
         
-        input = Input(tela,(Tela.centerX-80,Tela.centerY+100))
+        input = Input(tela,(Tela.centerX-80,Tela.centerY+100),(0,0,255))
         texto = "Digite o Nome para o Jogador"
-        # musica_menu = pg.mixer.music.load('./Assets/soundtracks/Form Model.mp3')
-        # pg.mixer.music.play(-1)
+        # pg.mixer.music.load('./Assets/soundtracks/Form Model.mp3')
+       
+
         # pg.mouse.set_visible(True)
+        colortxt = (255,255,255)
+
         while inicial:
             tela.fill((0,0,0))
 
-            txt1 = Texto.DrawTexto(texto,(255,255,255),newFont=font_txt)
+            txt1 = Texto.DrawTexto(texto,colortxt,newFont=font_txt)
             txt1_rect = Texto.posRect(txt1,(Tela.centerX,Tela.centerY+50))
 
             # Imagem de Fundo
@@ -65,8 +68,12 @@ class Tela:
 
             if len(input.texto) == 6:
                 texto = "Aperte a Telca Enter para começar"
+                colortxt = (0,255,0)
+                input.color = (0,255,0)
             else:
                 texto = "Digite o Nome para o Jogador"
+                colortxt = (255,0,0)
+                input.color = (255,0,0)
                 # return input.enter
             pg.display.flip()
     
@@ -92,20 +99,25 @@ class Tela:
         txt_partidas_jogador = Texto.DrawTexto(f"Partidas do Jogador: {dados_jogador[1]}",(255,255,255),newFont=font_txt)
         txt_pos2 = Texto.posRect(txt_partidas_jogador,(Tela.centerX,280))
 
-        txt_media_jogador = Texto.DrawTexto(f"Media do Jogador: {dados_jogador[0]}",(255,255,255),newFont=font_txt)
+        txt_media_jogador = Texto.DrawTexto(f"Media de Pontos do Jogador: {dados_jogador[0]}",(255,255,255),newFont=font_txt)
         txt_pos1 = Texto.posRect(txt_media_jogador,(Tela.centerX,320))
 
         txt_media_g = Texto.DrawTexto(f"Media Geral de Pontos: {dados[0]}",(255,255,255),newFont=font_txt)
         txt_media_rect = Texto.posRect(txt_media_g,(Tela.centerX,360))
 
         txt1 = Texto.DrawTexto("Aperte a Tecla R para Reiniciar o Jogo",(255,255,255),newFont=font_txt)
-        txt1_pos = Texto.posRect(txt1,(Tela.centerX,tela.get_height()-100))
+        txt1_pos = Texto.posRect(txt1,(Tela.centerX,tela.get_height()-250))
 
         txt2 = Texto.DrawTexto("Ou aperte a Tecla M para ir para o Menu",(255,255,255),newFont=font_txt)
-        txt2_pos = Texto.posRect(txt1,(Tela.centerX,tela.get_height()-50))
+        txt2_pos = Texto.posRect(txt1,(Tela.centerX,tela.get_height()-200))
         # print(dados)
-        pg.mouse.set_visible(True)
-        pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
+        # pg.mouse.set_visible(True)
+        # pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
+
+        game_over_sound = pg.mixer.Sound('./Assets/soundtracks/Game Over.mp3')
+        game_over_sound.set_volume(0.9)
+        game_over_sound.play()
+
         while morte:
             tela.fill((0,0,0))
             pg.mixer.music.stop()
@@ -200,7 +212,7 @@ class Input:
 
 class Save:
     def lerArquivo():
-        Dados = open(diretorio+"\Assets\Save\Save.txt","r")
+        Dados = open(diretorio+"\Save.txt","r")
         # Dados = open("Save.txt","r+")
         save = []
         texto = Dados.read().split("\n")
@@ -220,7 +232,7 @@ class Save:
 
         # return texto
     def salvarJogador(pontos,nome, load=[]):
-        save = open(diretorio+'\Assets\Save\Save.txt','w+')
+        save = open(diretorio+'\Save.txt','w+')
         # p_jogador = 0
         soma_total = 0
         load.append([nome,str(pontos)])
@@ -249,8 +261,8 @@ class Save:
 
         for pontos in jogador_pontos: 
             soma += int(pontos)
-        media_jogador = round(soma/p)
-        # print(jogador_pontos)
-        # print(f"Media Jogador: {media_jogador}")
-        # print(f"Partidas Jogador: {p}")
+        if soma != 0:
+            media_jogador = round(soma/p)
+        else: 
+            media_jogador = 0
         return media_jogador,p

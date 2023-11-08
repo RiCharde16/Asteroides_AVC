@@ -13,6 +13,8 @@ sys.path.append(dirpath)
 if getattr(sys,'frozen',False):
     os.chdir(sys._MEIPASS)
 
+# O Codigo abaixo usa a biblioteca do Tkinter para
+# pegar a largura e a altura da tela do computador que sera usado
 root = tk.Tk()
 pg.init()
 
@@ -21,23 +23,26 @@ pg.init()
 largura = root.winfo_screenwidth()
 altura = root.winfo_screenheight()
 
+# Codigo do Jogo
 screen = pg.display.set_mode((largura,altura-50))
 sprite_sheet = pg.image.load('./Assets/sprites/Sprites_Personagem.png').convert_alpha()
 img = sprite_sheet.subsurface((0,0),(96,96))
-# pg.display.set_icon(img)
 pg.display.set_caption("Asteroide")
 pg.display.set_icon(pg.transform.scale(img,(32,32)))
 
-# musica_background = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
-# pg.mixer.music.play(-1)
-musica_background = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
+musica1 = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
+pg.mixer.music.set_volume(0.55)
 pg.mixer.music.play(-1)
 
+
 sound_lazer = pg.mixer.Sound('./Assets/soundtracks/Laser Gun Short Silencer 03.mp3')
-sound_lazer.set_volume(0.4)
+sound_lazer.set_volume(0.7)
+
+sound_destroyer = pg.mixer.Sound('./Assets/soundtracks/boom.wav')
+sound_destroyer.set_volume(0.4)
 
 class Asteroide(pg.sprite.Sprite):
-    def __init__(self,pos,group,all_sprites,velocidade=2):
+    def __init__(self,pos,group,all_sprites,velocidade=3):
         self._layer = 3
         super().__init__(all_sprites,group)
         self.sprites_asteroide = []
@@ -54,17 +59,30 @@ class Asteroide(pg.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
         self.position = pg.math.Vector2(pos)
         self.speed = velocidade
-        self.angle = 0
+        self.angle = pos[1]
         self.mask = pg.mask.from_surface(self.rotated_image)
+        self.colidiu = False
+        self.obj = ""
     def update(self):
-        self.rotaciona()
-        self.movimentacao()
+        if not(self.colidiu):
+            self.rotaciona()
+            self.movimentacao()
+        else:
+            self.rotated_image = self.sprites_asteroide[int(self.index)]
+            # all_sprites.remove(obj)
+            # print(self.obj)
+            if self.index == 12:
+                # self.allgroup.remove(obj)
+                all_sprites.remove(self.obj)
+            self.index += 0.5
+            #     return 0
+        screen.blit(self.rotated_image,(self.rect.x - self.rotated_image.get_width() // 2,self.rect.y - self.rotated_image.get_height() // 2))
         
     def rotaciona(self):
         self.angle += 2
         self.rotated_image = pg.transform.rotate(self.image, self.angle)
         # screen.blit(rotated_image,(self.rect.x - rotated_image.get_width() // 2,self.rect.y - rotated_image.get_height() // 2))
-        screen.blit(self.rotated_image,(self.rect.x - self.rotated_image.get_width() // 2,self.rect.y - self.rotated_image.get_height() // 2))
+        
         # screen.blit(rotated_image,(self.rect))
     def movimentacao(self):
         player_pos = pg.math.Vector2(player.rect.center)
@@ -75,10 +93,16 @@ class Asteroide(pg.sprite.Sprite):
         self.position += velocity 
         self.rect.center = self.position
 
+    def destruir(self,colidiu=False,sprite=""):
+        if colidiu:
+            self.index = 3
+            self.colidiu = colidiu
+            self.obj = sprite
+
 class Player(pg.sprite.Sprite):
-    def __init__(self,pos,group,all_sprites):
+    def __init__(self,pos,all_sprites,velocidade=6):
         self._layer= 2
-        super().__init__(all_sprites,group)
+        super().__init__(all_sprites)
         self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
         self.image = self.spritesheet.subsurface((0,0),(96,96))
         # group.add(self, layer= self.layer)
@@ -87,7 +111,7 @@ class Player(pg.sprite.Sprite):
 
         self.angle = 0
         self.rotated = self.image
-        self.speed = 6
+        self.speed = velocidade
         
 
     def update(self):
@@ -128,7 +152,7 @@ class Lazer(pg.sprite.Sprite):
         self.image = self.spritesheet.subsurface((96,0),(96,96))
         self.image = pg.transform.scale(self.image,(64,64))
         self.rect = self.image.get_rect(center=pos)
-        self.speed = 10
+        self.speed = 15
         self.copy = self.image
         
 
@@ -150,8 +174,8 @@ class Lazer(pg.sprite.Sprite):
             # print(all_sprites)
 
 
-def verificarColisao(obj1,group):
-    colidiu = pg.sprite.spritecollide(obj1,group,False, pg.sprite.collide_mask)
+def verificarColisao(obj1,sprite_group):
+    colidiu = pg.sprite.spritecollide(obj1,sprite_group,False, pg.sprite.collide_mask)
     return colidiu
 
 grupo_asteroide = pg.sprite.Group()
@@ -159,18 +183,18 @@ grupo_lazer = pg.sprite.Group()
 all_sprites = pg.sprite.LayeredUpdates()
 
 
-player = Player((largura//2,altura//2),all_sprites,all_sprites)
+player = Player((largura//2,altura//2),all_sprites)
 
-def gerarAsteroides(spped=2):
+def gerarAsteroides(speed=3):
     for x in range(20): 
         pos_x = randint(-1200,largura+1000)
         pos_y = randint(-1200,altura+1000)
         if pos_x < 0 or pos_x > largura and pos_y < 0 or pos_y > altura: 
-            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites,spped)
+            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites,speed)
 
 def reiniciarJogo(goMenu=False):
     # pg.mixer.music.play(-1)
-    global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu,load
+    global all_sprites,player,death, pontos, grupo_asteroide, grupo_lazer,menu,load,speed_asteroide
 
     pg.mixer.music.play(-1)
     load = Save.lerArquivo()
@@ -179,43 +203,46 @@ def reiniciarJogo(goMenu=False):
     grupo_asteroide.empty()
     pontos = 0
     death = False
-    player = Player((largura//2,altura//2),all_sprites,all_sprites)
-    gerarAsteroides()
+    player = Player((largura//2,altura//2),all_sprites)
+    speed_asteroide = 3
+    gerarAsteroides(speed_asteroide)
 
-asteroide = Asteroide((10,100),grupo_asteroide,all_sprites)
 clock = pg.time.Clock()
 
 pontos = 0
+# Criação de Eventos para o timer do pygame
 evento_tempo = pg.USEREVENT + 1
+evento_tempo2 = pg.USEREVENT + 2
+
 menu = True
 Tela.centerX = screen.get_width()/2
 Tela.centerY = screen.get_height()/2
 
 pg.time.set_timer(evento_tempo, 12000)
+pg.time.set_timer(evento_tempo2, 1000)
 
 font1 = Texto.novaFonte(Tela.dir_font,32) 
-# font_nome = Texto.novaFonte(Tela.dir_font,32)
 
-# menu = Tela.Menu(menu,screenn)
+# Carrega o arquivo e os Salva em uma lista
 load = Save.lerArquivo()
 FPS = 30
-# print(pg.mixer.get_num_channels())
 
-speed_asteroide = 2
+speed_asteroide = 3
 gerarAsteroides(speed_asteroide)
+apagar = False
 while True:
     clock.tick(FPS)
+    # Tela.GameOver(True,screen,pontos,load)
     menu = Tela.Menu(menu,screen)
-    # pg.mouse.set_visible(menu)
-    # print(Tela.nome_jogador)
+    pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
     screen.fill((0,0,0))
     # pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
     name = Texto.DrawTexto(Tela.nome_jogador,(255,255,255),newFont=font1)
-
+    
     name_rect = name.get_rect(topleft=(10,20))
 
     txt_pontos = Texto.DrawTexto(f"PONTOS: {pontos}",bold=True,newFont=font1)
-    txt_rect = txt_pontos.get_rect(center=(largura-120,40))
+    txt_rect = txt_pontos.get_rect(bottomright=(largura-10,60))
 
     # pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
     
@@ -223,19 +250,18 @@ while True:
         if event.type == QUIT:
             pg.quit()
             exit()
-        if event.type == KEYDOWN:
-            player.atirando(event)   
-        if event.type == evento_tempo:
-            # if pontos:
-            if pontos%50 == 0 and pontos != 0 and speed_asteroide <= 10:
-                speed_asteroide += 1
+        elif event.type == KEYDOWN:
+            player.atirando(event)  
+
+        elif event.type == evento_tempo:
             gerarAsteroides(speed_asteroide)
+        elif event.type == evento_tempo2:
+            if pontos%10 == 0 and pontos > 40 and speed_asteroide < 5:
+                speed_asteroide += 1
+                player.speed += 1
+        
         Tela.verificarJanelaMinimizada(event)
-    # if pontos%100 == 0:
-    # if (pontos%100) == 0 and pontos != 0:
-    #     print("Aumentar velocidade")
-        # print(pontos%100)
-    #     print("Aumentar")
+
     # Verifica cada sprite no grupo asteroide e depois faz o mesmo no lazer para remover as sprites que colidiram
     for sprite in grupo_asteroide:
         colisao_tiro = verificarColisao(sprite,grupo_lazer) 
@@ -243,13 +269,12 @@ while True:
             colisao_meteoro = verificarColisao(lazer,grupo_asteroide)
             if colisao_meteoro and colisao_tiro:
                 pontos += 1
-                all_sprites.remove(sprite)
+                sound_destroyer.play()
                 grupo_asteroide.remove(sprite)
-
+                sprite.destruir(colisao_tiro,sprite)
                 all_sprites.remove(lazer)
                 grupo_lazer.remove(lazer)
-    
-    # Ira verificar se algum sprite do laser saiu da tela e ira exclui-lo do Grupo das sprites principal
+                
     for lazer in grupo_lazer:
         lazer.outScreen(lazer)
 
@@ -265,6 +290,7 @@ while True:
     
 
     all_sprites.update()
+    # print(all_sprites)
     screen.blit(txt_pontos,txt_rect)
     screen.blit(name,name_rect)
     # group_camera.custom_draw()
