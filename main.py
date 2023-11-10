@@ -25,10 +25,9 @@ altura = root.winfo_screenheight()
 
 # Codigo do Jogo
 screen = pg.display.set_mode((largura,altura-50))
-sprite_sheet = pg.image.load('./Assets/sprites/Sprites_Personagem.png').convert_alpha()
-img = sprite_sheet.subsurface((0,0),(96,96))
-pg.display.set_caption("Asteroide")
-pg.display.set_icon(pg.transform.scale(img,(32,32)))
+img = pg.image.load('./Assets/Background/asteroide.png').convert_alpha()
+pg.display.set_caption("Asteroides")
+pg.display.set_icon(img)
 
 musica1 = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
 pg.mixer.music.set_volume(0.55)
@@ -36,7 +35,7 @@ pg.mixer.music.play(-1)
 
 
 sound_lazer = pg.mixer.Sound('./Assets/soundtracks/Laser Gun Short Silencer 03.mp3')
-sound_lazer.set_volume(0.7)
+sound_lazer.set_volume(1)
 
 sound_destroyer = pg.mixer.Sound('./Assets/soundtracks/boom.wav')
 sound_destroyer.set_volume(0.4)
@@ -103,7 +102,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self,pos,all_sprites,velocidade=6):
         self._layer= 2
         super().__init__(all_sprites)
-        self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
+        self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png").convert_alpha()
         self.image = self.spritesheet.subsurface((0,0),(96,96))
         # group.add(self, layer= self.layer)
         self.image = pg.transform.scale(self.image,(86,86))
@@ -130,12 +129,7 @@ class Player(pg.sprite.Sprite):
         elif key[K_RIGHT]:
             self.angle = self.angle - self.speed
             self.rotated = pg.transform.rotate(self.image,self.angle)
-        # if abs(self.angle) == 360:
-        #     self.angle = 0
-        # if self.angle == -180:
-        #     self.angle = 180
-        # elif self.angle == 180:
-        #     self.angle = -180
+        
 
     def atirando(self,evento):
         # print(self.angle)
@@ -148,11 +142,11 @@ class Lazer(pg.sprite.Sprite):
         self._layer = 1
         super().__init__(all_sprites,group)
         self.angle =angle
-        self.spritesheet = pg.image.load("./Assets/sprites/Sprites_Personagem.png")
+        self.spritesheet = pg.image.load("./Assets/sprites/Sprites_Personagem.png").convert_alpha()
         self.image = self.spritesheet.subsurface((96,0),(96,96))
         self.image = pg.transform.scale(self.image,(64,64))
         self.rect = self.image.get_rect(center=pos)
-        self.speed = 15
+        self.speed = 20
         self.copy = self.image
         
 
@@ -168,11 +162,10 @@ class Lazer(pg.sprite.Sprite):
         screen.blit(self.copy,(self.rect.x - self.copy.get_width() // 2, self.rect.y - self.copy.get_height() // 2 ))
     
     def outScreen(self,sprite):
-        if self.rect.x < 0 or self.rect.x > largura or self.rect.y < 0 or self.rect.y > altura:
+        if self.rect.x < 0 or self.rect.x > largura-10 or self.rect.y < 0 or self.rect.y > altura-10:
             all_sprites.remove(sprite)
             grupo_lazer.remove(sprite)
             # print(all_sprites)
-
 
 def verificarColisao(obj1,sprite_group):
     colidiu = pg.sprite.spritecollide(obj1,sprite_group,False, pg.sprite.collide_mask)
@@ -190,7 +183,7 @@ def gerarAsteroides(speed=3):
         pos_x = randint(-1200,largura+1000)
         pos_y = randint(-1200,altura+1000)
         if pos_x < 0 or pos_x > largura and pos_y < 0 or pos_y > altura: 
-            asteroide = Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites,speed)
+            Asteroide((pos_x,pos_y),grupo_asteroide,all_sprites,speed)
 
 def reiniciarJogo(goMenu=False):
     # pg.mixer.music.play(-1)
@@ -256,7 +249,7 @@ while True:
         elif event.type == evento_tempo:
             gerarAsteroides(speed_asteroide)
         elif event.type == evento_tempo2:
-            if pontos%10 == 0 and pontos > 40 and speed_asteroide < 5:
+            if pontos%10 == 0 and pontos > 40 and speed_asteroide < 7 and pontos != 0:
                 speed_asteroide += 1
                 player.speed += 1
         
@@ -282,6 +275,8 @@ while True:
 
     if death:
         all_sprites.remove(all_sprites)
+        sound_lazer.stop()
+        sound_destroyer.stop()
         death = Tela.GameOver(death,screen,pontos,load)
         if death[0] == False and death[1] == False:
             reiniciarJogo()

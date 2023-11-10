@@ -23,22 +23,18 @@ class Tela:
         
         background_img = pg.image.load('./assets/Background/Space_wallapaper.gif')
         background_img = pg.transform.scale(background_img,(tela.get_width(),tela.get_height()))
+        
+        input = Input(tela,(Tela.centerX-80,Tela.centerY+100),(0,0,255))
+        texto = "Digite o Nome para o Jogador"
+
+        amarelo = (255,255,0)
+        colortxt = (255,255,255)
 
         font_titulo = Texto.novaFonte(Tela.dir_font,90)
         font_txt = Texto.novaFonte(Tela.dir_font)
 
-        titulo = Texto.DrawTexto("Asteroide",(255,255,255),newFont=font_titulo,bold=True)
+        titulo = Texto.DrawTexto("Asteroides",(amarelo),newFont=font_titulo,bold=True)
         titulo_rect = Texto.posRect(titulo,(Tela.centerX,Tela.centerY-100))
-
-        # nome = Texto.DrawTexto()
-        
-        input = Input(tela,(Tela.centerX-80,Tela.centerY+100),(0,0,255))
-        texto = "Digite o Nome para o Jogador"
-        # pg.mixer.music.load('./Assets/soundtracks/Form Model.mp3')
-       
-
-        # pg.mouse.set_visible(True)
-        colortxt = (255,255,255)
 
         while inicial:
             tela.fill((0,0,0))
@@ -72,8 +68,8 @@ class Tela:
                 input.color = (0,255,0)
             else:
                 texto = "Digite o Nome para o Jogador"
-                colortxt = (255,0,0)
-                input.color = (255,0,0)
+                colortxt = amarelo
+                input.color = amarelo
                 # return input.enter
             pg.display.flip()
     
