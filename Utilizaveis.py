@@ -208,44 +208,37 @@ class Input:
 
 class Save:
     def lerArquivo():
+        try:
+            Dados = open(diretorio+'\Save.txt','x')
+        except:
+            pass
         Dados = open(diretorio+"\Save.txt","r")
-        # Dados = open("Save.txt","r+")
         save = []
         texto = Dados.read().split("\n")
         if texto != ['']:
-            # for item in texto:
             for x in range(0,len(texto)-1):
-                # if x < len(texto)-2:
-                    # print(x)
                     save.append(texto[x].split("\t\t"))
-                # print(texto[len(texto)-1])
             
         save.sort()
         Dados.close()
-        # print(len(save))
         return save
 
-
-        # return texto
     def salvarJogador(pontos,nome, load=[]):
         save = open(diretorio+'\Save.txt','w+')
-        # p_jogador = 0
         soma_total = 0
         load.append([nome,str(pontos)])
         load.sort()
-        # if load != []:
-            # save.write(load)
         
         for item in load:
             save.write(f'{item[0]}\t\t{item[1]}\n')
             soma_total += int(item[1])
 
-        # media_g = f"{soma_total/len(load):.2f}"
         media_g = f"{round(soma_total/len(load))}"
 
         save.write(f'Media Geral de Pontos:\t\t{media_g}')
         save.close()
         return media_g,load
+    
     def mediaJogador(dados,player_name):
         p,soma = 0,0  
         jogador_pontos = []
@@ -253,7 +246,6 @@ class Save:
             if player[0] == player_name:
                 jogador_pontos.append(player[1])
                 p += 1
-        # print(jogador_pontos)
 
         for pontos in jogador_pontos: 
             soma += int(pontos)

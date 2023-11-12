@@ -1,5 +1,7 @@
-RICK09		10
-RICK09		62
-X1CAR4		125
-X1CAR4		79
-Media Geral de Pontos:		69
+FALCON		25
+FALCON		83
+RICKAR		0
+RICKAR		13
+RICKAR		60
+RICKAR		86
+Media Geral de Pontos:		44

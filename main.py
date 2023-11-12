@@ -30,7 +30,8 @@ pg.display.set_caption("Asteroides")
 pg.display.set_icon(img)
 
 musica1 = pg.mixer.music.load('./Assets/soundtracks/Used To Say.mp3')
-pg.mixer.music.set_volume(0.55)
+# pg.mixer.music.set_volume(0.55)
+pg.mixer.music.set_volume(0.0)
 pg.mixer.music.play(-1)
 
 
@@ -102,34 +103,66 @@ class Player(pg.sprite.Sprite):
     def __init__(self,pos,all_sprites,velocidade=6):
         self._layer= 2
         super().__init__(all_sprites)
-        self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png").convert_alpha()
+        self.spritesheet = pg.image.load("./assets/sprites/Sprites_Personagem.png")
+        self.index = 0
+        self.animation = []
         self.image = self.spritesheet.subsurface((0,0),(96,96))
         # group.add(self, layer= self.layer)
-        self.image = pg.transform.scale(self.image,(86,86))
+        for x in range(8):
+            img = self.spritesheet.subsurface((x*96,0),(96,96))
+            self.animation.append(img)
+
+        self.image = pg.transform.scale(self.animation[self.index],(86,86))
         self.rect = self.image.get_rect(center=pos)
 
         self.angle = 0
         self.rotated = self.image
         self.speed = velocidade
+        self.moviment = pg.Vector2(0,-self.speed)
+        self.move = False
         
 
     def update(self):
+        # self.index = 
         self.movimentacao()
-        self.direct = pg.math.Vector2(0,-self.speed).rotate(self.angle)
+        self.outScreen()
+        if self.move == True:
+            self.rotated = pg.transform.rotate(self.image,self.angle)
+            self.index += 0.5
+            if self.index > len(self.animation)-2:
+                self.index = 1
+        else:
+            self.index = 0
+            self.rotated = pg.transform.rotate(self.image,self.angle)
+           
+        self.image = pg.transform.scale(self.animation[int(self.index)],(86,86))
+        self.direct = pg.math.Vector2(0,-self.speed)
+
         self.mask = pg.mask.from_surface(self.rotated)
         screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
-        # screen.blit(self.rotated,(self.rect.x - self.rotated.get_width()//2, self.rect.y - self.rotated.get_height() //2))
     
     def movimentacao(self):
+        # move = False
+        # self.index = 0
         key = pg.key.get_pressed()
-
+        # self.image = pg.transform.scale(self.animation[int(self.index)],(86,86))
+        if key[K_UP]:
+            self.rect.center += self.moviment.rotate(-self.angle)            
+            self.move = True
         if key[K_LEFT]:
             self.angle = self.angle + self.speed
             self.rotated = pg.transform.rotate(self.image,self.angle)
-        elif key[K_RIGHT]:
+        if key[K_RIGHT]:
             self.angle = self.angle - self.speed
-            self.rotated = pg.transform.rotate(self.image,self.angle)
-        
+            self.rotated = pg.transform.rotate(self.image,self.angle)     
+        if key[K_UP] == False:
+            self.index = 0
+            self.move = False
+            # print("Parou")
+            
+        # if pg.KEYUP == K_UP:
+        #     self.move = False
+        #     self.index = 0
 
     def atirando(self,evento):
         # print(self.angle)
@@ -137,13 +170,23 @@ class Player(pg.sprite.Sprite):
             blaster = Lazer((self.rect.x+32,self.rect.y+32),self.angle,grupo_lazer,all_sprites)
             sound_lazer.play()
 
+    def outScreen(self):
+        if self.rect.x < 5:
+            self.rect.x = largura-5
+        elif self.rect.x > largura-5:
+            self.rect.x = 5
+        elif self.rect.y < 5:
+            self.rect.y = altura-5
+        elif self.rect.y > altura-5:
+            self.rect.y = 5
+
 class Lazer(pg.sprite.Sprite):
     def __init__(self,pos,angle,group,all_sprites):
         self._layer = 1
         super().__init__(all_sprites,group)
         self.angle =angle
-        self.spritesheet = pg.image.load("./Assets/sprites/Sprites_Personagem.png").convert_alpha()
-        self.image = self.spritesheet.subsurface((96,0),(96,96))
+        self.spritesheet = pg.image.load("./Assets/sprites/Sprites_Personagem.png")
+        self.image = self.spritesheet.subsurface((672,0),(96,96))
         self.image = pg.transform.scale(self.image,(64,64))
         self.rect = self.image.get_rect(center=pos)
         self.speed = 20
@@ -249,7 +292,7 @@ while True:
         elif event.type == evento_tempo:
             gerarAsteroides(speed_asteroide)
         elif event.type == evento_tempo2:
-            if pontos%10 == 0 and pontos > 40 and speed_asteroide < 7 and pontos != 0:
+            if pontos%10 == 0 and pontos > 40 and speed_asteroide < 6 and pontos != 0:
                 speed_asteroide += 1
                 player.speed += 1
         
