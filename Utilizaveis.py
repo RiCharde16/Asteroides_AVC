@@ -216,8 +216,10 @@ class Save:
         save = []
         texto = Dados.read().split("\n")
         if texto != ['']:
-            for x in range(0,len(texto)-1):
-                    save.append(texto[x].split("\t\t"))
+            for x in range(0,len(texto)):
+                    if not("Media" in texto[x]) and texto[x] != "": 
+                        print(texto[x])
+                        save.append(texto[x].split("\t\t"))
             
         save.sort()
         Dados.close()
